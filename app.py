@@ -2,6 +2,7 @@ from flask import Flask, request
 from flask_restful import Api, Resource, reqparse
 from flask_jwt import JWT, jwt_required
 from security import authenticate, identity
+from user import UserRegistration
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'f3ff4158c7fc7ac1086f284e568143b6a97249508998c0b3474541d17bbe74ccba891f048e98e33a375dd714'
@@ -52,6 +53,7 @@ class Items(Resource):
 
 api.add_resource(Item, '/item/<string:name>')
 api.add_resource(Items, '/items')
+api.add_resource(UserRegistration, '/register')
 
 
 app.run(debug=True)
