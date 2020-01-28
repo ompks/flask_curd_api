@@ -3,8 +3,11 @@ import sqlite3
 connection = sqlite3.connect('data.db')
 cursor = connection.cursor()
 
-query = "CREATE TABLE USERS (ID INTEGER PRIMARY KEY, USERNAME TEXT, PASSWORD TEXT)"
+user_table = "CREATE TABLE IF NOT EXISTS USERS (ID INTEGER PRIMARY KEY, USERNAME TEXT, PASSWORD TEXT)"
+connection.execute(user_table)
 
-connection.execute(query)
+items_table = "CREATE TABLE IF NOT EXISTS ITEMS (ID INTEGER PRIMARY KEY, NAME TEXT, PRICE REAL)"
+connection.execute(items_table)
+
 connection.commit()
 connection.close()
