@@ -50,10 +50,12 @@ class UserRegistration(Resource):
     @classmethod
     def post(cls):
         data = cls.parser.parse_args()
+        if User.find_by_username(data['username']):
+            return {'message': 'A user with {} username already exists!'.format(data['username'])}, 400
         connection = sqlite3.connect('data.db')
         cursor = connection.cursor()
         create_user = "INSERT INTO USERS VALUES(NULL,?,?)"
         cursor.execute(create_user, (data['username'], data['password']))
         connection.commit()
         connection.close()
-        return {'message': 'User has been created sucessfully!'}
+        return {'message': 'User has been created sucessfully!'}, 201
