@@ -18,46 +18,76 @@ class Item(Resource):
             return {'item':{'name': row[1], 'price': row[2]}}, 200
         return None
 
-    def post(self, name):
-        if self.find_by_name(name):
-            return {'message': 'Item already exists!'}, 400
-        data = Item.parser.parse_args()
-        new_item = {'name': name, 'price': data['price']}
+    @classmethod
+    def insert_item(cls, item):
         connection = sqlite3.connect('data.db')
         cursor = connection.cursor()
         query = "INSERT INTO ITEMS VALUES (NULL, ?, ?)"
-        cursor.execute(query, (name, new_item['price']))
+        cursor.execute(query, (item['name'], item['price']))
         connection.commit()
         connection.close()
-        return new_item, 201
+
+    @classmethod
+    def update(cls, item):
+        connection = sqlite3.connect('data.db')
+        cursor = connection.cursor()
+        query = "UPDATE ITEMS SET PRICE=? WHERE NAME=?"
+        cursor.execute(query, (item['price'], item['name']))
+        connection.commit()
+        connection.close()
+
+    def post(self, name):
+        @jwt_required()
+        if self.find_by_name(name):
+            return {'message': 'Item already exists!'}, 400
+        data = Item.parser.parse_args()
+        item = {'name': name, 'price': data['price']}
+        try:
+            self.insert_item(item)
+        except:
+            return {'message': 'An error happened while inserting item!'}, 500
+        return item, 201
 
     def get(self, name):
-        item = self.find_by_name()
+        item = self.find_by_name(name)
         if item:
             return item
         return {'message': 'No item found!'}, 400
 
     def delete(self, name):
-        global items
-        items = list(filter(lambda x: x['name'] != name, items))
+        connection = sqlite3.connect('data.db')
+        cursor = connection.cursor()
+        query = "DELETE FROM ITEMS WHERE NAME=?"
+        cursor.execute(query, (name,))
+        connection.commit()
+        connection.close()
         return {'message': 'Item has been deleted!'}
 
     def put(self, name):
-        item = next(filter(lambda x: x['name'] == name, items), None)
+        item = self.find_by_name(name)
+        data = Item.parser.parse_args()
+        updated_item = {'name': name, 'price': data['price']}
         if item:
-            data = Item.parser.parse_args()
-            item['price'] = data['price']
-            return {'message': 'Item has been updated!'}
+            try:
+                self.update(updated_item)
+            except:
+                return {'message': 'An error happened while inserting item!'}, 500
         else:
-            return {'message': 'Item does not exist!'}, 400
+            try:
+                self.insert_item(updated_item)
+            except:
+                return {'message': 'An error happened while updating item!'}, 500
+        return {'message': 'Item has been updated!'}
 		
 
 class Items(Resource):
-    @jwt_required()
     def get(self):
-       connection = sqlite3.connect('data.db')
-       cursor = connection.cursor()
-       select_query = "SELECT * FROM ITEMS"
-       result = cursor.execute(select_query)
-       for row in result:
-           return {'id': row[0], 'name': row[1], 'price': row[2]}
+        connection = sqlite3.connect('data.db')
+        cursor = connection.cursor()
+        select_query = "SELECT * FROM ITEMS"
+        result = cursor.execute(select_query)
+        items = []
+        for row in result:
+            items.append({'id': row[0], 'name': row[1], 'price': row[2]})
+        connection.close()
+        return {'items': items}        
